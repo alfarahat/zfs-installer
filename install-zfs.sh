@@ -982,9 +982,16 @@ function install_and_configure_bootloader {
   print_step_info_header
 
   chroot_execute "echo PARTUUID=$(blkid -s PARTUUID -o value "${v_selected_disks[0]}-part1") /boot/efi vfat nofail,x-systemd.device-timeout=1 0 1 > /etc/fstab"
+  for ((i = 1; i < ${#v_selected_disks[@]}; i++)); do
+    chroot_execute "echo PARTUUID=$(blkid -s PARTUUID -o value "${v_selected_disks[i]}-part1") /boot/efi$((i+1)) vfat nofail,x-systemd.device-timeout=1 0 1 >> /etc/fstab"
+  done
 
   chroot_execute "mkdir -p /boot/efi"
   chroot_execute "mount /boot/efi"
+  for ((i = 1; i < ${#v_selected_disks[@]}; i++)); do
+    chroot_execute "mkdir -p /boot/efi$((i+1))"
+    chroot_execute "mount /boot/efi$((i+1))"
+  done
 
   chroot_execute "grub-install"
 
@@ -1013,15 +1020,25 @@ function install_and_configure_bootloader {
   chroot_execute "update-grub"
 
   chroot_execute "umount /boot/efi"
+  for ((i = 1; i < ${#v_selected_disks[@]}; i++)); do
+    chroot_execute "umount /boot/efi$((i+1))"
+  done
 }
 
 function install_and_configure_bootloader_Debian {
   print_step_info_header
 
   chroot_execute "echo PARTUUID=$(blkid -s PARTUUID -o value "${v_selected_disks[0]}-part1") /boot/efi vfat nofail,x-systemd.device-timeout=1 0 1 > /etc/fstab"
+  for ((i = 1; i < ${#v_selected_disks[@]}; i++)); do
+    chroot_execute "echo PARTUUID=$(blkid -s PARTUUID -o value "${v_selected_disks[i]}-part1") /boot/efi$((i+1)) vfat nofail,x-systemd.device-timeout=1 0 1 >> /etc/fstab"
+  done
 
   chroot_execute "mkdir -p /boot/efi"
   chroot_execute "mount /boot/efi"
+  for ((i = 1; i < ${#v_selected_disks[@]}; i++)); do
+    chroot_execute "mkdir -p /boot/efi$((i+1))"
+    chroot_execute "mount /boot/efi$((i+1))"
+  done
 
   chroot_execute "grub-install"
 
@@ -1032,15 +1049,22 @@ function install_and_configure_bootloader_Debian {
   chroot_execute "update-grub"
 
   chroot_execute "umount /boot/efi"
+  for ((i = 1; i < ${#v_selected_disks[@]}; i++)); do
+    chroot_execute "umount /boot/efi$((i+1))"
+  done
 }
 
 function clone_efi_partition {
   print_step_info_header
 
+  chroot_execute "mount /boot/efi"
   for ((i = 1; i < ${#v_selected_disks[@]}; i++)); do
-    dd if="${v_selected_disks[0]}-part1" of="${v_selected_disks[i]}-part1"
+    chroot_execute "mount /boot/efi$((i+1))"
+    chroot_execute "rsync -Rai --stats --human-readable --delete --verbose --progress /boot/efi/./ /boot/efi$((i+1))"
+    chroot_execute "umount /boot/efi$((i+1))"
     efibootmgr --create --disk "${v_selected_disks[i]}" --label "ubuntu-$((i + 1))" --loader '\EFI\ubuntu\grubx64.efi'
   done
+  chroot_execute "umount /boot/efi"
 }
 
 function configure_boot_pool_import {
