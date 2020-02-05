@@ -1171,6 +1171,44 @@ if [[ $# -ne 0 ]]; then
   display_help_and_exit
 fi
 
+# debug stuff ##########################
+
+v_bpool_name=bpool
+v_bpool_tweaks="-o ashift=12"
+v_linux_distribution= # UbuntuServer
+v_linux_distribution_version= # 18.04
+v_encrypt_rpool=0
+v_passphrase=12345678
+v_root_password=a
+v_rpool_name=rpool
+v_rpool_tweaks="-o ashift=12 -O acltype=posixacl -O compression=lz4 -O dnodesize=auto -O relatime=on -O xattr=sa -O normalization=formD"
+v_selected_disks=("/dev/disk/by-id/$(ls -l /dev/disk/by-id | perl -ane 'print $F[8] if /sda$/')")
+v_swap_size=2
+v_free_tail_space=1
+
+export ZFS_SKIP_LIVE_ZFS_MODULE_INSTALL=0
+export ZFS_NO_INFO_MESSAGES=1
+
+export ZFS_SELECTED_DISKS=$(echo "${v_selected_disks[*]}" | sed 's/ /,/')
+export ZFS_OS_INSTALLATION_SCRIPT=
+export ZFS_ENCRYPT_RPOOL=$v_encrypt_rpool
+export ZFS_PASSPHRASE=$v_passphrase
+export ZFS_DEBIAN_ROOT_PASSWORD=$v_root_password
+export ZFS_BPOOL_NAME=$v_bpool_name
+export ZFS_RPOOL_NAME=$v_rpool_name
+export ZFS_BPOOL_TWEAKS=$v_bpool_tweaks
+export ZFS_RPOOL_TWEAKS=$v_rpool_tweaks
+export ZFS_SWAP_SIZE=$v_swap_size
+export ZFS_FREE_TAIL_SPACE=$v_free_tail_space
+
+umount /mnt/boot || true
+umount /mnt || true
+zpool destroy bpool || true
+zpool destroy rpool || true
+rm -rf "$c_unpacked_subiquity_dir"
+
+########################################
+
 activate_debug
 store_os_distro_information
 set_distribution_data
